@@ -156,7 +156,7 @@ inline void info2(const std::string &fmt, Args &&...args) {
 
 template <typename... Args>
 inline void warning(const std::string &fmt, Args &&...args) {
-    detail::emit("WARNING", detail::COLOR_YELLOW, detail::format(fmt, std::forward<Args>(args)...));
+    detail::emit("WARNG", detail::COLOR_YELLOW, detail::format(fmt, std::forward<Args>(args)...));
 }
 
 // Prints the message and then throws std::runtime_error(message).
