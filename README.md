@@ -37,3 +37,20 @@ Build the demo:
 ```sh
 g++ -std=c++17 -Iinclude examples/demo.cpp -o demo && ./demo
 ```
+
+## Output
+
+Console output is color-coded (green/teal/yellow/red); the same lines are written to the
+log file, if configured, without the color codes:
+
+```
+[MYAPP] [21:29:37,2026-07-09,315] [INFO1] | max_iter_mu = 10, max_iter_Theta = 20, max_iter_v = 30
+[MYAPP] [21:29:37,2026-07-09,315] [INFO2] | inner loop k = 5
+[MYAPP] [21:29:37,2026-07-09,315] [WARNING] | value 42 is out of expected range [0, 10]
+[MYAPP] [21:29:37,2026-07-09,315] [ERROR] | failed to converge after 100 iterations
+```
+
+- `INFO1` — green
+- `INFO2` — teal
+- `WARNING` — yellow
+- `ERROR` — red (and also throws `std::runtime_error` after printing)
