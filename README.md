@@ -12,6 +12,7 @@ A tiny, single-header C++17 logging library. No dependencies, no build step — 
 - Line format: `[LOG_ID] [time,date,millisecond] [LEVEL] | message`
 - Optional mirroring of all output to a log file (no ANSI color codes in the file)
 - `{}`-style placeholder formatting, e.g. `logging::info1("x = {}, y = {}", x, y)`
+- Thread-safe: safe to call from multiple threads concurrently, output is never interleaved or torn
 
 ## Usage
 
@@ -54,3 +55,17 @@ log file, if configured, without the color codes:
 - `INFO2` — teal
 - `WARNING` — yellow
 - `ERROR` — red (and also throws `std::runtime_error` after printing)
+
+## Thread safety
+
+All state (verbosity level, log id, log file) can be read and written concurrently from
+multiple threads. The level is a `std::atomic<int>` so `info1()`/`info2()` can check it
+without locking; writing to stderr/the log file is serialized through a single mutex, so
+lines from concurrent log calls are always complete and never interleaved.
+
+`examples/thread_stress.cpp` exercises this with 16 threads x 500 iterations x 4 log
+calls each and verifies every line in the output is well-formed:
+
+```sh
+g++ -std=c++17 -pthread -Iinclude examples/thread_stress.cpp -o thread_stress && ./thread_stress
+```

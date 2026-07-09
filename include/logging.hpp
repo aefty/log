@@ -15,6 +15,7 @@
 // warning() and error() are always printed regardless of the level set with set_level().
 // error() throws std::runtime_error(message) after printing.
 
+#include <atomic>
 #include <chrono>
 #include <ctime>
 #include <fstream>
@@ -25,12 +26,18 @@
 #include <stdexcept>
 #include <string>
 
+// Thread safety: all state (level, log id, log file) is safe to read and
+// write concurrently from multiple threads. The level is a std::atomic so
+// info1()/info2() can check it without locking; the log id, log file and
+// the actual write to stderr/file are serialized through a single mutex so
+// lines from concurrent log calls are never interleaved or torn.
+
 namespace logging {
 
 namespace detail {
 
-inline int &log_level() {
-    static int level = 2;
+inline std::atomic<int> &log_level() {
+    static std::atomic<int> level{2};
     return level;
 }
 
@@ -113,12 +120,15 @@ inline void emit(const char *level_str, const char *color, const std::string &ms
 
 // Sets the info verbosity: 0 = no info output, 1 = info1 only, 2 = info1 + info2.
 // Does not affect warning() or error(), which always print.
-inline void set_level(int level) { detail::log_level() = level; }
+inline void set_level(int level) { detail::log_level().store(level); }
 
-inline int get_level() { return detail::log_level(); }
+inline int get_level() { return detail::log_level().load(); }
 
 // Sets the [LOG_ID] tag shown in every line. Defaults to "LOG".
-inline void set_log_id(const std::string &id) { detail::log_id() = id; }
+inline void set_log_id(const std::string &id) {
+    std::lock_guard<std::mutex> lock(detail::log_mutex());
+    detail::log_id() = id;
+}
 
 // Mirrors all subsequent output to the given file, in addition to stderr.
 inline void set_log_file(const std::string &path, bool append = true) {
@@ -134,13 +144,13 @@ inline void close_log_file() {
 
 template <typename... Args>
 inline void info1(const std::string &fmt, Args &&...args) {
-    if (detail::log_level() >= 1)
+    if (detail::log_level().load() >= 1)
         detail::emit("INFO1", detail::COLOR_GREEN, detail::format(fmt, std::forward<Args>(args)...));
 }
 
 template <typename... Args>
 inline void info2(const std::string &fmt, Args &&...args) {
-    if (detail::log_level() >= 2)
+    if (detail::log_level().load() >= 2)
         detail::emit("INFO2", detail::COLOR_TEAL, detail::format(fmt, std::forward<Args>(args)...));
 }
 
