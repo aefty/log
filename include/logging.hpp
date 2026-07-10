@@ -18,9 +18,7 @@
 
 #include <atomic>
 #include <chrono>
-#include <ctime>
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <mutex>
 #include <sstream>
@@ -59,20 +57,8 @@ inline std::mutex &log_mutex() {
 
 inline std::string timestamp() {
     using namespace std::chrono;
-    const auto now = system_clock::now();
-    const auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
-    const std::time_t t = system_clock::to_time_t(now);
-    std::tm tm_buf{};
-#if defined(_WIN32)
-    localtime_s(&tm_buf, &t);
-#else
-    localtime_r(&t, &tm_buf);
-#endif
-    std::ostringstream oss;
-    oss << std::put_time(&tm_buf, "%H:%M:%S") << ','
-        << std::put_time(&tm_buf, "%Y-%m-%d") << ','
-        << std::setfill('0') << std::setw(3) << ms.count();
-    return oss.str();
+    const auto ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    return std::to_string(ms.count());
 }
 
 inline void format_impl(std::ostringstream &oss, const std::string &fmt, size_t pos) {
