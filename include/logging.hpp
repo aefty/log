@@ -15,15 +15,22 @@
 //
 // warning() and error() are always printed regardless of the level set with set_level().
 // error() throws std::runtime_error(message) after printing.
+//
+// Argument formatting: bool prints as True/False, integers print as plain
+// ints, and floating-point values print in scientific notation, e.g.
+// 1.123456e+02. logging::set_significant_digits(n) sets how many digits
+// follow the decimal point in the mantissa (default 6).
 
 #include <atomic>
 #include <chrono>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 // Thread safety: all state (level, log id, log file) is safe to read and
 // write concurrently from multiple threads. The level is a std::atomic so
@@ -55,10 +62,32 @@ inline std::mutex &log_mutex() {
     return m;
 }
 
+inline std::atomic<int> &significant_digits() {
+    static std::atomic<int> digits{6};
+    return digits;
+}
+
 inline std::string timestamp() {
     using namespace std::chrono;
     const auto ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     return std::to_string(ms.count());
+}
+
+// bool -> True/False, floating point -> scientific notation (see
+// set_significant_digits), everything else (including all integer types)
+// streamed as-is.
+template <typename T>
+inline void stream_value(std::ostringstream &oss, T &&value) {
+    using D = std::decay_t<T>;
+    if constexpr (std::is_same_v<D, bool>) {
+        oss << (value ? "True" : "False");
+    } else if constexpr (std::is_floating_point_v<D>) {
+        std::ostringstream tmp;
+        tmp << std::scientific << std::setprecision(significant_digits().load()) << value;
+        oss << tmp.str();
+    } else {
+        oss << value;
+    }
 }
 
 inline void format_impl(std::ostringstream &oss, const std::string &fmt, size_t pos) {
@@ -72,7 +101,8 @@ inline void format_impl(std::ostringstream &oss, const std::string &fmt, size_t 
         oss << fmt.substr(pos);
         return;
     }
-    oss << fmt.substr(pos, open - pos) << value;
+    oss << fmt.substr(pos, open - pos);
+    stream_value(oss, std::forward<T>(value));
     format_impl(oss, fmt, open + 2, std::forward<Rest>(rest)...);
 }
 
@@ -111,6 +141,13 @@ inline void emit(const char *level_str, const char *color, const std::string &ms
 inline void set_level(int level) { detail::log_level().store(level); }
 
 inline int get_level() { return detail::log_level().load(); }
+
+// Sets how many digits follow the decimal point in the mantissa when
+// formatting floating-point log arguments, e.g. set_significant_digits(6)
+// prints 1.123456e+02. Defaults to 6.
+inline void set_significant_digits(int digits) { detail::significant_digits().store(digits); }
+
+inline int get_significant_digits() { return detail::significant_digits().load(); }
 
 // Sets the [LOG_ID] tag shown in every line. Defaults to "LOG".
 inline void set_log_id(const std::string &id) {

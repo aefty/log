@@ -8,7 +8,9 @@ int main() {
     int max_iter_mu = 10, max_iter_Theta = 20, max_iter_v = 30;
     logging::info1("max_iter_mu = {}, max_iter_Theta = {}, max_iter_v = {}", max_iter_mu, max_iter_Theta, max_iter_v);
     logging::info2("inner loop k = {}", 5);
-    logging::info3("gradient norm = {}", 0.0031);
+
+    logging::set_significant_digits(3);
+    logging::info3("gradient norm = {}, converged = {}", 0.0031, false);
     logging::warning("value {} is out of expected range [{}, {}]", 42, 0, 10);
 
     logging::set_level(0); // silence info, warning/error still print
