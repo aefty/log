@@ -3,12 +3,13 @@
 // Single-header C++ logging library.
 //
 // Usage:
-//   logging::set_level(2);                 // 0 = no info output, 1 = info1 only, 2 = info1+info2
+//   logging::set_level(3);                 // 0 = no info output, 1 = info1, 2 = info1+info2, 3 = info1+info2+info3
 //   logging::set_log_id("MYAPP");          // optional, defaults to "LOG"
 //   logging::set_log_file("run.log");      // optional, also mirrors output to a file
 //
 //   logging::info1("max_iter_mu = {}, max_iter_Theta = {}", max_iter_mu, max_iter_Theta);
 //   logging::info2("inner loop k = {}", k);
+//   logging::info3("gradient norm = {}", g);
 //   logging::warning("value {} out of range", v);
 //   logging::error("failed to converge after {} iterations", n);  // prints then throws std::runtime_error
 //
@@ -97,10 +98,11 @@ inline std::string format(const std::string &fmt, Args &&...args) {
 }
 
 constexpr const char *COLOR_RESET = "\033[0m";
-constexpr const char *COLOR_GREEN = "\033[32m";  // info1
-constexpr const char *COLOR_TEAL = "\033[36m";   // info2
-constexpr const char *COLOR_YELLOW = "\033[33m"; // warning
-constexpr const char *COLOR_RED = "\033[31m";    // error
+constexpr const char *COLOR_GREEN = "\033[32m";   // info1
+constexpr const char *COLOR_TEAL = "\033[36m";    // info2
+constexpr const char *COLOR_VIOLET = "\033[35m";  // info3
+constexpr const char *COLOR_YELLOW = "\033[33m";  // warning
+constexpr const char *COLOR_RED = "\033[31m";     // error
 
 inline void emit(const char *level_str, const char *color, const std::string &msg) {
     std::lock_guard<std::mutex> lock(log_mutex());
@@ -118,7 +120,7 @@ inline void emit(const char *level_str, const char *color, const std::string &ms
 
 } // namespace detail
 
-// Sets the info verbosity: 0 = no info output, 1 = info1 only, 2 = info1 + info2.
+// Sets the info verbosity: 0 = no info output, 1 = info1, 2 = info1 + info2, 3 = info1 + info2 + info3.
 // Does not affect warning() or error(), which always print.
 inline void set_level(int level) { detail::log_level().store(level); }
 
@@ -152,6 +154,12 @@ template <typename... Args>
 inline void info2(const std::string &fmt, Args &&...args) {
     if (detail::log_level().load() >= 2)
         detail::emit("INFO2", detail::COLOR_TEAL, detail::format(fmt, std::forward<Args>(args)...));
+}
+
+template <typename... Args>
+inline void info3(const std::string &fmt, Args &&...args) {
+    if (detail::log_level().load() >= 3)
+        detail::emit("INFO3", detail::COLOR_VIOLET, detail::format(fmt, std::forward<Args>(args)...));
 }
 
 template <typename... Args>
