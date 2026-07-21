@@ -6,7 +6,7 @@ A tiny, single-header C++17 logging library. No dependencies, no build step — 
 
 - Header-only: `include/logging.hpp`
 - Five log calls: `info1`, `info2`, `info3`, `warning`, `error`
-- Global verbosity level (0/1/2/3) gates `info1`/`info2`/`info3`; `warning` and `error` always print
+- Global verbosity level (-1/0/1/2/3) gates `info1`/`info2`/`info3`/`warning`; `-1` also silences `warning`; `error` always prints
 - `error(...)` prints the message and then throws `std::runtime_error`
 - Color-coded output: green (`info1`), teal (`info2`), violet (`info3`), yellow (`warning`), red (`error`)
 - Line format: `[LOG_ID] [epoch_ms] [LEVEL] | message`
@@ -26,7 +26,7 @@ A tiny, single-header C++17 logging library. No dependencies, no build step — 
 int main() {
     logging::set_log_id("MYAPP");        // optional, defaults to "LOG"
     logging::set_log_file("run.log");    // optional, mirrors output to a file
-    logging::set_level(3);               // 0 = no info output, 1 = info1, 2 = info1+info2, 3 = info1+info2+info3
+    logging::set_level(3);               // -1 = silent (errors only), 0 = no info output, 1 = info1, 2 = info1+info2, 3 = info1+info2+info3
 
     logging::info1("max_iter_mu = {}, max_iter_Theta = {}, max_iter_v = {}",
                     max_iter_mu, max_iter_Theta, max_iter_v);

@@ -13,8 +13,9 @@
 //   logging::warning("value {} out of range", v);
 //   logging::error("failed to converge after {} iterations", n);  // prints then throws std::runtime_error
 //
-// warning() and error() are always printed regardless of the level set with set_level().
-// error() throws std::runtime_error(message) after printing.
+// error() always prints regardless of the level set with set_level().
+// warning() prints unless the level is set to -1; error() throws
+// std::runtime_error(message) after printing.
 //
 // Argument formatting: bool prints as True/False, integers print as plain
 // ints, and floating-point values print in scientific notation, e.g.
@@ -136,8 +137,9 @@ inline void emit(const char *level_str, const char *color, const std::string &ms
 
 } // namespace detail
 
-// Sets the info verbosity: 0 = no info output, 1 = info1, 2 = info1 + info2, 3 = info1 + info2 + info3.
-// Does not affect warning() or error(), which always print.
+// Sets the info verbosity: -1 = no info or warning output (errors still print),
+// 0 = no info output, 1 = info1, 2 = info1 + info2, 3 = info1 + info2 + info3.
+// Does not affect error(), which always prints.
 inline void set_level(int level) { detail::log_level().store(level); }
 
 inline int get_level() { return detail::log_level().load(); }
@@ -187,7 +189,8 @@ inline void info3(const std::string &fmt, Args &&...args) {
 
 template <typename... Args>
 inline void warning(const std::string &fmt, Args &&...args) {
-    detail::emit("WARNG", detail::COLOR_YELLOW, detail::format(fmt, std::forward<Args>(args)...));
+    if (detail::log_level().load() >= 0)
+        detail::emit("WARNG", detail::COLOR_YELLOW, detail::format(fmt, std::forward<Args>(args)...));
 }
 
 // Prints the message and then throws std::runtime_error(message).
