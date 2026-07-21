@@ -123,7 +123,7 @@ constexpr const char *COLOR_RED = "\033[31m";     // error
 inline void emit(const char *level_str, const char *color, const std::string &msg) {
     std::lock_guard<std::mutex> lock(log_mutex());
     std::ostringstream line;
-    line << "[" << log_id() << "] [" << timestamp() << "] [" << level_str << "] | " << msg;
+    line << "/" << log_id() << "/" << timestamp() << "/" << level_str << " | " << msg;
 
     std::ostream &out = std::cerr;
     out << color << line.str() << COLOR_RESET << '\n';
